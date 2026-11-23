@@ -1,0 +1,10 @@
+results/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+# supplied data - not redistributed
+snapshots/0*/
+snapshots_zip/
+*.zip
+Knowledge-Hackathon-Assignment.pdf
