@@ -53,7 +53,9 @@ class LLMComposer:
     def __init__(self):
         self.model = os.getenv("CUKNOW_MODEL", "claude-opus-5-5")
         self.effort = os.getenv("CUKNOW_EFFORT", "low")
-        self.client = anthropic.Anthropic(timeout=20.0, max_retries=1)
+        # gzip only: some environments ship an old `brotli` that the HTTP client can't drive.
+        self.client = anthropic.Anthropic(timeout=20.0, max_retries=1,
+                                          default_headers={"Accept-Encoding": "gzip, deflate"})
         self._use_fallbacks = True
 
     # ------------------------------------------------------------------ evidence

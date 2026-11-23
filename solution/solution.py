@@ -57,6 +57,7 @@ except Exception:  # pragma: no cover - fallback mirrors harness/contract.py
 
 from cuknow.conflicts import find_conflicts  # noqa: E402
 from cuknow.engine import Engine  # noqa: E402
+from cuknow.query import analyze  # noqa: E402
 from cuknow.store import Store  # noqa: E402
 
 
@@ -82,6 +83,16 @@ class CreditUnionKnowledge:
             self._cache.clear()
             self._conflicts = None
 
+    @staticmethod
+    def _route_to_llm(question: str, r) -> bool:
+        """Only free-text answers go to the LLM. Rate lookups, hours aggregation, links, counts and
+        refusals are computed by the engine from structure the evidence passages don't show, and a
+        rewrite there was measured to lose accuracy (0.83 -> 0.75 on the public set)."""
+        if r.kind != "passage":
+            return False
+        qi = analyze(question)
+        return not (qi.asks_count or qi.asks_phone or qi.asks_address or qi.asks_hours or qi.asks_link)
+
     def answer(self, question: str, as_of: Optional[str] = None):
         key = (" ".join(question.lower().split()), as_of)
         with self._lock:
@@ -89,7 +100,7 @@ class CreditUnionKnowledge:
                 return self._cache[key]
             self.store.build()
         r = self.engine.answer(question, as_of)
-        if self._llm is not None:
+        if self._llm is not None and self._route_to_llm(question, r):
             try:
                 r = self._llm.compose(question, as_of, r, self.engine)
             except Exception as e:
