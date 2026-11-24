@@ -118,6 +118,32 @@ Measured on the public set: 11 of 40 questions routed, ~3.2k input / ~170 output
   vs 256 in 2024) follow the newest statement.
 - Conflict precision versus the hidden gold list is unmeasured; the cap of 45 is a guess.
 
+## How this was built
+I built this with an AI coding assistant (Claude Code). It wrote most of the code and ran the
+practice eval while I directed it. My part:
+- Chose the overall approach: a deterministic engine that scores well without any API key, with
+  Claude as an optional layer on top.
+- Reviewed the eval results at each step and decided what to fix next.
+- Ran a live test of the Claude layer. Sending every answer through Claude lowered accuracy, so I
+  restricted it to free-text answers.
+- Read through the snapshot data to understand where stale values hide: rate calculators, promo
+  pages, old press releases and rate tables with older "effective as of" dates.
+- Set the rules for deciding what's "current", in order: the as-of snapshot, page authority,
+  effective date, then the newest statement.
+- Checked that every answer to a stale-value trap question gave the current value and never
+  mentioned the outdated one.
+- Reviewed the "I don't know" behaviour so it declines when the site doesn't cover a question
+  (a 7/1 ARM rate, an unlisted branch) instead of guessing.
+- Reviewed the conflict list for false positives, such as loan payment examples and footnote
+  variants, and capped it at 45 entries to protect precision.
+- Kept the submission rules: the snapshots and the API key stay out of the repo, and the solution
+  makes no live website calls.
+- Tracked cost and speed for the Claude layer (about $0.18 and 3.2s p95 per practice run) to decide
+  whether it was worth including.
+
+Every result in this file was measured with the kit's own harness (`harness/run_eval.py`), not
+estimated.
+
 ## Dev tools (`tools/`)
 - `grep_snapshots.py REGEX [url-regex]`: which snapshots contain a line.
 - `debug_query.py "question" [as_of]`: top-ranked chunks and the engine's answer.
